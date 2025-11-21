@@ -145,6 +145,17 @@
   </nav>
 
   <div class="admin-container" style="margin-top: 6rem;">
+    <!-- Authentication UI -->
+    <div id="loginContainer" class="admin-section" style="margin-bottom: 1.5rem; display: none;">
+      <h2 style="color: var(--navy-blue); margin-bottom: 1rem;">Admin Sign In</h2>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        <input id="adminEmail" type="email" placeholder="admin@example.com" style="padding:0.6rem; width:260px;">
+        <input id="adminPassword" type="password" placeholder="Password" style="padding:0.6rem; width:200px;">
+        <button id="signInBtn" class="submit-button">Sign In</button>
+        <button id="signOutBtn" class="submit-button" style="background:#6c757d; display:none;">Sign Out</button>
+        <div id="signedInAs" style="margin-left:auto; color:#155724; font-weight:600; display:none;"></div>
+      </div>
+    </div>
     <div class="admin-header">
       <h1>Media Album Management</h1>
       <p>Add and manage Google Drive folder IDs for your event albums</p>
@@ -222,12 +233,20 @@
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // DOM references
     const form = document.getElementById('albumForm');
     const albumList = document.getElementById('albumList');
     const submitBtn = document.getElementById('submitBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const successMessage = document.getElementById('success-message');
     const errorMessage = document.getElementById('error-message');
+
+    const loginContainer = document.getElementById('loginContainer');
+    const adminEmail = document.getElementById('adminEmail');
+    const adminPassword = document.getElementById('adminPassword');
+    const signInBtn = document.getElementById('signInBtn');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const signedInAs = document.getElementById('signedInAs');
 
     let editingAlbumId = null;
 
@@ -248,7 +267,73 @@
       }, 5000);
     }
 
+    // --- Auth helpers ---
+    async function updateAuthUI() {
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session;
+
+      if (session && session.user) {
+        // signed in
+        loginContainer.style.display = 'block';
+        signInBtn.style.display = 'none';
+        signOutBtn.style.display = 'inline-block';
+        adminEmail.style.display = 'none';
+        adminPassword.style.display = 'none';
+        signedInAs.style.display = 'block';
+        signedInAs.textContent = `Signed in as ${session.user.email}`;
+
+        // show admin UI
+        document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'block');
+        // ensure we load albums now that we're authenticated
+        loadAlbums();
+      } else {
+        // not signed in — hide admin sections except login
+        loginContainer.style.display = 'block';
+        signInBtn.style.display = 'inline-block';
+        signOutBtn.style.display = 'none';
+        adminEmail.style.display = 'inline-block';
+        adminPassword.style.display = 'inline-block';
+        signedInAs.style.display = 'none';
+
+        // hide the main admin grid (all .admin-section except login)
+        document.querySelectorAll('.admin-section').forEach(s => {
+          if (s.id !== 'loginContainer') s.style.display = 'none';
+        });
+      }
+    }
+
+    signInBtn.addEventListener('click', async () => {
+      const email = adminEmail.value.trim();
+      const password = adminPassword.value;
+      if (!email || !password) {
+        showMessage('Please enter email and password', true);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        // signed in — UI will update via auth state change listener
+        showMessage('Signed in successfully');
+      } catch (err) {
+        showMessage('Sign-in error: ' + (err.message || err), true);
+      }
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      showMessage('Signed out');
+      await updateAuthUI();
+    });
+
+    // Listen for auth state changes
+    supabase.auth.onAuthStateChange(() => {
+      updateAuthUI();
+    });
+
+    // --- Album management ---
     async function loadAlbums() {
+      // only attempt if admin UI is visible
       try {
         const { data, error } = await supabase
           .from('media_albums')
@@ -266,22 +351,18 @@
           <div class="album-item">
             <div class="album-info">
               <h4>${album.title}</h4>
-              
               <p><strong>Date:</strong> ${new Date(album.event_date).toLocaleDateString()}</p>
               <p><strong>Folder ID:</strong> <code>${album.folder_id}</code></p>
               <p><strong>Status:</strong> ${album.is_active ? '✅ Active' : '❌ Hidden'}</p>
             </div>
             <div class="album-actions">
-              <button class="btn-small btn-toggle" onclick="toggleAlbum('${album.id}', ${!album.is_active})">
-                ${album.is_active ? 'Hide' : 'Show'}
-              </button>
+              <button class="btn-small btn-toggle" onclick="toggleAlbum('${album.id}', ${!album.is_active})">${album.is_active ? 'Hide' : 'Show'}</button>
               <button class="btn-small btn-edit" onclick="editAlbum('${album.id}')">Edit</button>
               <button class="btn-small btn-delete" onclick="deleteAlbum('${album.id}')">Delete</button>
             </div>
           </div>
         `).join('');
       } catch (error) {
-        console.error('Error loading albums:', error);
         albumList.innerHTML = '<p style="text-align: center; color: #dc3545;">Error loading albums. Please refresh the page.</p>';
       }
     }
@@ -298,7 +379,7 @@
         showMessage(`Album ${isActive ? 'activated' : 'hidden'} successfully!`);
         loadAlbums();
       } catch (error) {
-        showMessage('Error toggling album: ' + error.message, true);
+        showMessage('Error toggling album: ' + (error.message || error), true);
       }
     };
 
@@ -326,14 +407,12 @@
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (error) {
-        showMessage('Error loading album: ' + error.message, true);
+        showMessage('Error loading album: ' + (error.message || error), true);
       }
     };
 
     window.deleteAlbum = async function(id) {
-      if (!confirm('Are you sure you want to delete this album? This action cannot be undone.')) {
-        return;
-      }
+      if (!confirm('Are you sure you want to delete this album? This action cannot be undone.')) return;
 
       try {
         const { error } = await supabase
@@ -346,7 +425,7 @@
         showMessage('Album deleted successfully!');
         loadAlbums();
       } catch (error) {
-        showMessage('Error deleting album: ' + error.message, true);
+        showMessage('Error deleting album: ' + (error.message || error), true);
       }
     };
 
@@ -397,14 +476,15 @@
         cancelBtn.style.display = 'none';
         loadAlbums();
       } catch (error) {
-        showMessage('Error: ' + error.message, true);
+        showMessage('Error: ' + (error.message || error), true);
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = editingAlbumId ? 'Update Album' : 'Add Album';
       }
     });
 
-    loadAlbums();
+    // initialize UI based on auth state
+    updateAuthUI();
   </script>
   <script src="js/script.js"></script>
 </body>
