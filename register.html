@@ -148,13 +148,18 @@
   </footer>
 
   <script src="js/script.js"></script>
-  <script>
-    const scriptURL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
-    const form = document.getElementById("wesoForm");
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    form.addEventListener("submit", e => {
+    // Support build-time injected env (window.__ENV) for static pages
+    const env = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL) ? import.meta.env : (window.__ENV || {});
+    const supabaseUrl = env.VITE_SUPABASE_URL || '';
+    const supabaseKey = env.VITE_SUPABASE_ANON_KEY || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const form = document.getElementById('wesoForm');
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const submitButton = form.querySelector('.submit-button');
       const originalText = submitButton.textContent;
       submitButton.textContent = 'Submitting...';
@@ -162,24 +167,41 @@
 
       const data = Object.fromEntries(new FormData(form).entries());
 
-      fetch(scriptURL, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-        .then(response => {
-          alert("Thank you for joining WESO! We'll contact you soon with more details.");
-          form.reset();
-          submitButton.textContent = originalText;
-          submitButton.disabled = false;
-        })
-        .catch(err => {
-          alert("Error: " + err.message + "\n\nPlease try again or contact us directly.");
-          submitButton.textContent = originalText;
-          submitButton.disabled = false;
-        });
+      // Simple client-side validation
+      if (!data.fullName || !data.email || !data.phone) {
+        alert('Please complete required fields (name, email, phone).');
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+        return;
+      }
+
+      try {
+        // Insert into registrations table
+        const payload = {
+          full_name: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          gender: data.gender || null,
+          church: data.church || null,
+          ministry: data.ministry || null,
+          testimony: data.testimony || null
+        };
+
+        const { error } = await supabase
+          .from('registrations')
+          .insert([payload]);
+
+        if (error) throw error;
+
+        alert('Thank you for joining WESO! We received your registration.');
+        form.reset();
+      } catch (err) {
+        console.error('Registration error', err);
+        alert('Error submitting registration: ' + (err.message || err));
+      } finally {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+      }
     });
   </script>
 </body>
