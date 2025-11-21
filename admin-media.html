@@ -449,6 +449,17 @@
         updated_at: new Date()
       };
 
+      // Attach current authenticated user as creator when inserting
+      try {
+        const sessionRes = await supabase.auth.getSession();
+        const session = sessionRes?.data?.session;
+        if (session && session.user && !editingAlbumId) {
+          formData.created_by = session.user.id;
+        }
+      } catch (e) {
+        // ignore — created_by will be absent
+      }
+
       try {
         submitBtn.disabled = true;
         submitBtn.textContent = editingAlbumId ? 'Updating...' : 'Adding...';
