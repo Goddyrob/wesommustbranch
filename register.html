@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration - WESO | MMUST CU</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <img src="https://mmustcu.org/img/wesoLogo.jfif" alt="WESO Logo">
+        <h2>WESO</h2>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="wings.html">Wings</a></li>
+        <li><a href="media.html">Media</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="register.html">Registration</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <section class="section" style="padding-top: 8rem; background: #f5f5f5;">
+    <div class="container">
+      <h2 class="section-title fade-in">Join WESO</h2>
+      <p style="text-align: center; max-width: 700px; margin: 0 auto 2rem; font-size: 1.1rem;" class="fade-in">
+        Take the first step in joining a community of passionate soul winners. Fill out the form below and we'll contact you with more details about how you can serve!
+      </p>
+
+      <div class="form-container fade-in">
+        <form id="wesoForm">
+          <div class="form-group">
+            <label for="fullName">Full Name *</label>
+            <input type="text" id="fullName" name="fullName" required>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" name="phone" required>
+          </div>
+
+          <div class="form-group">
+            <label>Gender *</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="gender" value="Male" required>
+                Male
+              </label>
+              <label>
+                <input type="radio" name="gender" value="Female" required>
+                Female
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="church">Church / Fellowship *</label>
+            <input type="text" id="church" name="church" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ministry">Area of Ministry Interest *</label>
+            <select id="ministry" name="ministry" required>
+              <option value="">Select a ministry wing</option>
+              <option value="Evangelism">Evangelism Team</option>
+              <option value="Media">Media Team</option>
+              <option value="Hospital">Hospital Ministry</option>
+              <option value="Prison">Prison Ministry</option>
+              <option value="Market">Market Outreach</option>
+              <option value="Discipleship">Follow-up & Discipleship</option>
+              <option value="Music">Music & Worship</option>
+              <option value="Prayer">Prayer Team</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="testimony">Short Testimony or Why You Want to Join</label>
+            <textarea id="testimony" name="testimony" rows="5" placeholder="Share your heart for ministry..."></textarea>
+          </div>
+
+          <button type="submit" class="submit-button">Submit Registration</button>
+        </form>
+      </div>
+
+      <div class="bible-verse fade-in" style="margin-top: 3rem;">
+        "How beautiful are the feet of those who bring good news!"
+        <div class="reference">— Romans 10:15</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>About WESO</h3>
+          <p>Western Outreach Ministries is the evangelism department of Masinde Muliro University Christian Union, dedicated to winning souls for Christ across Western Kenya.</p>
+        </div>
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="wings.html">Our Wings</a></li>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="register.html">Register</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Contact Info</h3>
+          <p>📍 Masinde Muliro University of Science and Technology</p>
+          <p>Kakamega, Kenya</p>
+          <p>📧 weso@mmustcu.org</p>
+          <p>📱 +254 712 345 678</p>
+        </div>
+        <div class="footer-section">
+          <h3>Connect With Us</h3>
+          <div class="social-icons">
+            <a href="https://facebook.com" target="_blank">f</a>
+            <a href="https://instagram.com" target="_blank">📷</a>
+            <a href="https://youtube.com" target="_blank">▶️</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Western Outreach Ministries (WESO) - MMUST CU. All rights reserved.</p>
+        <p>Powered by <strong>Godswill Web Solutions</strong></p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    const scriptURL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+    const form = document.getElementById("wesoForm");
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+
+      const submitButton = form.querySelector('.submit-button');
+      const originalText = submitButton.textContent;
+      submitButton.textContent = 'Submitting...';
+      submitButton.disabled = true;
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(response => {
+          alert("Thank you for joining WESO! We'll contact you soon with more details.");
+          form.reset();
+          submitButton.textContent = originalText;
+          submitButton.disabled = false;
+        })
+        .catch(err => {
+          alert("Error: " + err.message + "\n\nPlease try again or contact us directly.");
+          submitButton.textContent = originalText;
+          submitButton.disabled = false;
+        });
+    });
+  </script>
+</body>
+</html>

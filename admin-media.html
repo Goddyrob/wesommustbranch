@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Admin - WESO | MMUST CU</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .admin-header {
+      background: var(--navy-blue);
+      color: var(--white);
+      padding: 2rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .admin-section {
+      background: var(--white);
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .album-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .album-item {
+      background: var(--light-gray);
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid var(--gold);
+    }
+
+    .album-info h4 {
+      color: var(--navy-blue);
+      margin-bottom: 0.25rem;
+    }
+
+    .album-info p {
+      font-size: 0.9rem;
+      color: #666;
+      margin: 0.25rem 0;
+    }
+
+    .album-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-small {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-edit {
+      background: var(--navy-blue);
+      color: var(--white);
+    }
+
+    .btn-delete {
+      background: #dc3545;
+      color: var(--white);
+    }
+
+    .btn-toggle {
+      background: var(--gold);
+      color: var(--navy-blue);
+    }
+
+    .btn-small:hover {
+      transform: scale(1.05);
+    }
+
+    .success-message {
+      background: #28a745;
+      color: white;
+      padding: 1rem;
+      border-radius: 5px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .error-message {
+      background: #dc3545;
+      color: white;
+      padding: 1rem;
+      border-radius: 5px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    @media (max-width: 968px) {
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <img src="https://mmustcu.org/img/wesoLogo.jfif" alt="WESO Logo">
+        <h2>WESO</h2>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="media.html">Public Gallery</a></li>
+        <li><a href="admin-media.html">Media Admin</a></li>
+      </ul>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-container" style="margin-top: 6rem;">
+    <div class="admin-header">
+      <h1>Media Album Management</h1>
+      <p>Add and manage Google Drive folder IDs for your event albums</p>
+    </div>
+
+    <div id="success-message" class="success-message"></div>
+    <div id="error-message" class="error-message"></div>
+
+    <div class="admin-grid">
+      <div class="admin-section">
+        <h2 style="color: var(--navy-blue); margin-bottom: 1.5rem;">Add New Album</h2>
+        <form id="albumForm" class="form-container" style="padding: 0; box-shadow: none;">
+          <input type="hidden" id="albumId" name="albumId">
+
+          <div class="form-group">
+            <label for="title">Album Title *</label>
+            <input type="text" id="title" name="title" required placeholder="e.g., Campus Revival Week 2025">
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" placeholder="Brief description of the event..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="folderId">Google Drive Folder ID *</label>
+            <input type="text" id="folderId" name="folderId" required placeholder="Paste folder ID from Drive URL">
+            <small style="color: #666; font-size: 0.85rem;">Get the ID from your Drive folder URL: drive.google.com/drive/folders/YOUR_FOLDER_ID</small>
+          </div>
+
+          <div class="form-group">
+            <!-- Category removed: albums will use optional cover image or default category -->
+            <input type="hidden" id="category" name="category" value="Other Events">
+          </div>
+
+          <div class="form-group">
+            <label for="eventDate">Event Date *</label>
+            <input type="date" id="eventDate" name="eventDate" required>
+          </div>
+
+          <div class="form-group">
+            <label for="coverImage">Cover Image URL (optional)</label>
+            <input type="url" id="coverImage" name="coverImage" placeholder="https://example.com/image.jpg">
+          </div>
+
+          <button type="submit" class="submit-button" id="submitBtn">Add Album</button>
+          <button type="button" class="submit-button" id="cancelBtn" style="background: #6c757d; display: none;">Cancel Edit</button>
+        </form>
+      </div>
+
+      <div class="admin-section">
+        <h2 style="color: var(--navy-blue); margin-bottom: 1.5rem;">Existing Albums</h2>
+        <div id="albumList" class="album-list">
+          <p style="text-align: center; color: #666;">Loading albums...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section" style="margin-top: 2rem; background: #fff3cd; border-left: 5px solid #ffc107;">
+      <h3 style="color: #856404;">📌 How to Get Your Google Drive Folder ID</h3>
+      <ol style="color: #856404; line-height: 1.8;">
+        <li>Upload your event photos to a folder in Google Drive</li>
+        <li>Right-click the folder and select "Share"</li>
+        <li>Change access to "Anyone with the link can view"</li>
+        <li>Copy the folder URL - it looks like: <code>https://drive.google.com/drive/folders/1a2b3c4d5e6f...</code></li>
+        <li>The Folder ID is the part after <code>/folders/</code> - paste just that ID above</li>
+      </ol>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const form = document.getElementById('albumForm');
+    const albumList = document.getElementById('albumList');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const successMessage = document.getElementById('success-message');
+    const errorMessage = document.getElementById('error-message');
+
+    let editingAlbumId = null;
+
+    function showMessage(message, isError = false) {
+      if (isError) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      } else {
+        successMessage.textContent = message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+      }
+
+      setTimeout(() => {
+        successMessage.style.display = 'none';
+        errorMessage.style.display = 'none';
+      }, 5000);
+    }
+
+    async function loadAlbums() {
+      try {
+        const { data, error } = await supabase
+          .from('media_albums')
+          .select('*')
+          .order('event_date', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          albumList.innerHTML = '<p style="text-align: center; color: #666;">No albums yet. Add your first album above!</p>';
+          return;
+        }
+
+        albumList.innerHTML = data.map(album => `
+          <div class="album-item">
+            <div class="album-info">
+              <h4>${album.title}</h4>
+              
+              <p><strong>Date:</strong> ${new Date(album.event_date).toLocaleDateString()}</p>
+              <p><strong>Folder ID:</strong> <code>${album.folder_id}</code></p>
+              <p><strong>Status:</strong> ${album.is_active ? '✅ Active' : '❌ Hidden'}</p>
+            </div>
+            <div class="album-actions">
+              <button class="btn-small btn-toggle" onclick="toggleAlbum('${album.id}', ${!album.is_active})">
+                ${album.is_active ? 'Hide' : 'Show'}
+              </button>
+              <button class="btn-small btn-edit" onclick="editAlbum('${album.id}')">Edit</button>
+              <button class="btn-small btn-delete" onclick="deleteAlbum('${album.id}')">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading albums:', error);
+        albumList.innerHTML = '<p style="text-align: center; color: #dc3545;">Error loading albums. Please refresh the page.</p>';
+      }
+    }
+
+    window.toggleAlbum = async function(id, isActive) {
+      try {
+        const { error } = await supabase
+          .from('media_albums')
+          .update({ is_active: isActive, updated_at: new Date() })
+          .eq('id', id);
+
+        if (error) throw error;
+
+        showMessage(`Album ${isActive ? 'activated' : 'hidden'} successfully!`);
+        loadAlbums();
+      } catch (error) {
+        showMessage('Error toggling album: ' + error.message, true);
+      }
+    };
+
+    window.editAlbum = async function(id) {
+      try {
+        const { data, error } = await supabase
+          .from('media_albums')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error('Album not found');
+
+        editingAlbumId = id;
+        document.getElementById('title').value = data.title;
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('folderId').value = data.folder_id;
+        document.getElementById('category').value = data.category;
+        document.getElementById('eventDate').value = data.event_date;
+        document.getElementById('coverImage').value = data.cover_image || '';
+
+        submitBtn.textContent = 'Update Album';
+        cancelBtn.style.display = 'block';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        showMessage('Error loading album: ' + error.message, true);
+      }
+    };
+
+    window.deleteAlbum = async function(id) {
+      if (!confirm('Are you sure you want to delete this album? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('media_albums')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        showMessage('Album deleted successfully!');
+        loadAlbums();
+      } catch (error) {
+        showMessage('Error deleting album: ' + error.message, true);
+      }
+    };
+
+    cancelBtn.addEventListener('click', () => {
+      editingAlbumId = null;
+      form.reset();
+      submitBtn.textContent = 'Add Album';
+      cancelBtn.style.display = 'none';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        folder_id: document.getElementById('folderId').value,
+        category: document.getElementById('category').value,
+        event_date: document.getElementById('eventDate').value,
+        cover_image: document.getElementById('coverImage').value,
+        updated_at: new Date()
+      };
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = editingAlbumId ? 'Updating...' : 'Adding...';
+
+        if (editingAlbumId) {
+          const { error } = await supabase
+            .from('media_albums')
+            .update(formData)
+            .eq('id', editingAlbumId);
+
+          if (error) throw error;
+          showMessage('Album updated successfully!');
+        } else {
+          const { error } = await supabase
+            .from('media_albums')
+            .insert([formData]);
+
+          if (error) throw error;
+          showMessage('Album added successfully!');
+        }
+
+        form.reset();
+        editingAlbumId = null;
+        submitBtn.textContent = 'Add Album';
+        cancelBtn.style.display = 'none';
+        loadAlbums();
+      } catch (error) {
+        showMessage('Error: ' + error.message, true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = editingAlbumId ? 'Update Album' : 'Add Album';
+      }
+    });
+
+    loadAlbums();
+  </script>
+  <script src="js/script.js"></script>
+</body>
+</html>
