@@ -233,35 +233,51 @@
   </div>
 
   <script>
-    // Runtime connection test: show a banner if Supabase env is missing or unreachable.
+    // Runtime connection test with fallback: if runtime-injected `window.__ENV` is empty,
+    // wait briefly for the module script to expose `window.__IMPORT_META` and use that.
     (async function(){
+      const banner = document.getElementById('connectionStatus');
+      function showBanner(text, bg, fg) {
+        banner.style.display = 'block';
+        banner.style.background = bg;
+        banner.style.color = fg;
+        banner.textContent = text;
+      }
+
       try {
-        const env = window.__ENV || {};
-        const banner = document.getElementById('connectionStatus');
-        if (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) {
-          banner.style.display = 'block';
-          banner.style.background = '#fff3cd';
-          banner.style.color = '#856404';
-          banner.textContent = 'Warning: Supabase environment variables not found. Admin sign-in will not work until VERCEL env vars are set.';
+        // prefer runtime-injected env
+        let env = window.__ENV && Object.keys(window.__ENV).length ? window.__ENV : null;
+
+        // if runtime env missing, poll briefly (module may set window.__IMPORT_META)
+        if (!env) {
+          const start = Date.now();
+          while (Date.now() - start < 3000) {
+            if (window.__IMPORT_META && Object.keys(window.__IMPORT_META).length) {
+              env = window.__IMPORT_META;
+              break;
+            }
+            // small delay
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(r => setTimeout(r, 150));
+          }
+        }
+
+        if (!env || !env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) {
+          showBanner('Warning: Supabase environment variables not found. Admin sign-in will not work until VERCEL env vars are set.', '#fff3cd', '#856404');
           return;
         }
 
         // Try to import the Supabase client and get session to ensure connectivity
         const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
         const supabase = mod.createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
-        const res = await supabase.auth.getSession();
-        // If we get here, Supabase is reachable
-        banner.style.display = 'block';
-        banner.style.background = '#d4edda';
-        banner.style.color = '#155724';
-        banner.textContent = 'Supabase reachable — admin UI ready.';
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        // reachable
+        showBanner('Supabase reachable — admin UI ready.', '#d4edda', '#155724');
         setTimeout(()=>banner.style.display='none', 4000);
       } catch (err) {
-        const banner = document.getElementById('connectionStatus');
-        banner.style.display = 'block';
-        banner.style.background = '#f8d7da';
-        banner.style.color = '#721c24';
-        banner.textContent = 'Error connecting to Supabase: ' + (err.message || err);
+        showBanner('Error connecting to Supabase: ' + (err?.message || err), '#f8d7da', '#721c24');
         console.error('Supabase connection test failed', err);
       }
     })();
