@@ -145,6 +145,19 @@
   </nav>
 
   <div class="admin-container" style="margin-top: 6rem;">
+    <script>
+      // Compatibility alias: some environments check `window._env`.
+      // Prefer runtime-injected `window.__ENV`, fall back to build-time `window.__IMPORT_META`.
+      (function(){
+        try {
+          window._env = (window.__ENV && Object.keys(window.__ENV).length) ? window.__ENV : (window.__IMPORT_META || {});
+        } catch (e) {
+          window._env = window._env || {};
+        }
+        // also expose for debugging
+        console.debug('env alias set', window._env);
+      })();
+    </script>
     <div id="connectionStatus" style="padding:0.75rem; margin-bottom:1rem; border-radius:6px; display:none;"></div>
     <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; align-items:center;">
       <button id="envToggle" class="btn-small" style="background:#f1f1f1; color:#222; border:1px solid #ddd;">Show env</button>
