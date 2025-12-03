@@ -1,8 +1,41 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Defensive env resolution for static deployments where import.meta.env
+// isn't available at runtime. Prefer runtime-injected `window.__ENV`.
+function resolveEnv() {
+  const runtime = (window.__ENV && typeof window.__ENV === 'object') ? window.__ENV :
+    (window.__IMPORT_META && typeof window.__IMPORT_META === 'object') ? window.__IMPORT_META :
+    (window._env && typeof window._env === 'object') ? window._env : null;
+
+  if (runtime && runtime.VITE_SUPABASE_URL && runtime.VITE_SUPABASE_ANON_KEY) {
+    return { VITE_SUPABASE_URL: runtime.VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY: runtime.VITE_SUPABASE_ANON_KEY };
+  }
+
+  try {
+    if (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
+      return { VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || '', VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || '' };
+    }
+  } catch (e) {
+    // ignore restricted environments
+  }
+
+  return { VITE_SUPABASE_URL: (runtime && runtime.VITE_SUPABASE_URL) || '', VITE_SUPABASE_ANON_KEY: (runtime && runtime.VITE_SUPABASE_ANON_KEY) || '' };
+}
+
+const env = resolveEnv();
+const supabaseUrl = env.VITE_SUPABASE_URL || '';
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY || '';
+let supabase = null;
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('Supabase env not found for media.js — requests will fail until VITE_* vars are injected at build/runtime');
+} else {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } catch (e) {
+    console.error('Failed to create Supabase client in media.js', e);
+    supabase = null;
+  }
+}
 
 let allAlbums = [];
 
@@ -20,6 +53,11 @@ async function loadAlbums() {
   const albumsGrid = document.getElementById('albums-grid');
 
   try {
+    if (!supabase) {
+      if (loadingSpinner) loadingSpinner.style.display = 'none';
+      albumsGrid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1/-1;">Supabase not configured. Albums cannot be loaded.</p>';
+      return;
+    }
     const { data, error } = await supabase
       .from('media_albums')
       .select('*')

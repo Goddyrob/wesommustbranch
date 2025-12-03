@@ -318,11 +318,49 @@
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    // expose build-time module env to the non-module runtime for debugging
-    window.__IMPORT_META = { VITE_SUPABASE_URL: supabaseUrl || '', VITE_SUPABASE_ANON_KEY: supabaseKey || '' };
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Resolve Supabase env from multiple possible sources with defensive checks.
+    // Prefer runtime-injected `window.__ENV` (copy-html.js), then other fallbacks.
+    function resolveEnv() {
+      // prefer runtime injection
+      const runtime = (window.__ENV && typeof window.__ENV === 'object') ? window.__ENV :
+        (window.__IMPORT_META && typeof window.__IMPORT_META === 'object') ? window.__IMPORT_META :
+        (window._env && typeof window._env === 'object') ? window._env : null;
+
+      if (runtime && runtime.VITE_SUPABASE_URL && runtime.VITE_SUPABASE_ANON_KEY) {
+        return { VITE_SUPABASE_URL: runtime.VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY: runtime.VITE_SUPABASE_ANON_KEY };
+      }
+
+      // try import.meta.env defensively
+      try {
+        if (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
+          return { VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || '', VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || '' };
+        }
+      } catch (e) {
+        // ignore - some runtimes restrict import.meta access
+      }
+
+      return { VITE_SUPABASE_URL: (runtime && runtime.VITE_SUPABASE_URL) || '', VITE_SUPABASE_ANON_KEY: (runtime && runtime.VITE_SUPABASE_ANON_KEY) || '' };
+    }
+
+    const resolved = resolveEnv();
+    const supabaseUrl = resolved.VITE_SUPABASE_URL || '';
+    const supabaseKey = resolved.VITE_SUPABASE_ANON_KEY || '';
+
+    // Expose resolved values for the debug panel
+    window.__IMPORT_META = window.__IMPORT_META || { VITE_SUPABASE_URL: supabaseUrl, VITE_SUPABASE_ANON_KEY: supabaseKey };
+
+    let supabase = null;
+    if (supabaseUrl && supabaseKey) {
+      try {
+        supabase = createClient(supabaseUrl, supabaseKey);
+      } catch (e) {
+        console.error('Failed to create Supabase client', e);
+        supabase = null;
+      }
+    } else {
+      console.warn('Supabase env not found; client not created');
+      // Leave supabase null — functions below will check and show friendly messages.
+    }
 
     // DOM references
     const form = document.getElementById('albumForm');
@@ -360,6 +398,25 @@
 
     // --- Auth helpers ---
     async function updateAuthUI() {
+      if (!supabase) {
+        // Supabase not configured — show login placeholder and warn
+        loginContainer.style.display = 'block';
+        signInBtn.style.display = 'inline-block';
+        signOutBtn.style.display = 'none';
+        adminEmail.style.display = 'inline-block';
+        adminPassword.style.display = 'inline-block';
+        signedInAs.style.display = 'none';
+        document.querySelectorAll('.admin-section').forEach(s => {
+          if (s.id !== 'loginContainer') s.style.display = 'none';
+        });
+        const banner = document.getElementById('connectionStatus');
+        banner.style.display = 'block';
+        banner.style.background = '#fff3cd';
+        banner.style.color = '#856404';
+        banner.textContent = 'Warning: Supabase environment variables not found. Admin sign-in will not work until VERCEL env vars are set.';
+        return;
+      }
+
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
 
@@ -394,6 +451,10 @@
     }
 
     signInBtn.addEventListener('click', async () => {
+      if (!supabase) {
+        showMessage('Supabase not configured. Cannot sign in.', true);
+        return;
+      }
       const email = adminEmail.value.trim();
       const password = adminPassword.value;
       if (!email || !password) {
@@ -412,18 +473,28 @@
     });
 
     signOutBtn.addEventListener('click', async () => {
+      if (!supabase) {
+        showMessage('Supabase not configured.', true);
+        return;
+      }
       await supabase.auth.signOut();
       showMessage('Signed out');
       await updateAuthUI();
     });
 
-    // Listen for auth state changes
-    supabase.auth.onAuthStateChange(() => {
-      updateAuthUI();
-    });
+    // Listen for auth state changes (only if client exists)
+    if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === 'function') {
+      supabase.auth.onAuthStateChange(() => {
+        updateAuthUI();
+      });
+    }
 
     // --- Album management ---
     async function loadAlbums() {
+      if (!supabase) {
+        albumList.innerHTML = '<p style="text-align: center; color: #666;">Supabase not configured. Albums cannot be loaded.</p>';
+        return;
+      }
       // only attempt if admin UI is visible
       try {
         const { data, error } = await supabase

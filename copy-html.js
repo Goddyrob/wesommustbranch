@@ -1,6 +1,37 @@
 import fs from 'fs';
 import path from 'path';
 
+// If a local .env file exists, load it so process.env contains VITE_* variables
+// when this script runs locally (avoids needing dotenv as a dependency).
+function loadDotEnvIfPresent() {
+  try {
+    const envPath = path.join(process.cwd(), '.env');
+    if (!fs.existsSync(envPath)) return;
+    const contents = fs.readFileSync(envPath, 'utf8');
+    contents.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+      const idx = trimmed.indexOf('=');
+      if (idx === -1) return;
+      const key = trimmed.slice(0, idx).trim();
+      let value = trimmed.slice(idx + 1).trim();
+      // remove surrounding quotes if present
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (key && (typeof process.env[key] === 'undefined' || process.env[key] === '')) {
+        process.env[key] = value;
+      }
+    });
+    console.log('Loaded local .env into process.env');
+  } catch (e) {
+    // non-fatal
+    console.warn('Could not load .env file:', e && e.message);
+  }
+}
+
+loadDotEnvIfPresent();
+
 // Copy all top-level .html files into public/ so Vite's build (and Vercel) will serve them as static files.
 const root = process.cwd();
 const publicDir = path.join(root, 'public');
