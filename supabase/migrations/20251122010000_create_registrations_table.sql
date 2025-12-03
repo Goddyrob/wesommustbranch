@@ -15,9 +15,8 @@ CREATE TABLE IF NOT EXISTS public.registrations (
 -- Simple policy: allow inserts from anon so the public can register (optional; you can tighten later)
 ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "public_insert" ON public.registrations
+CREATE POLICY IF NOT EXISTS "public_insert" ON public.registrations
   FOR INSERT
-  USING (true)
   WITH CHECK (true);
 
 -- Allow public select if you want to show registrations (optional)
